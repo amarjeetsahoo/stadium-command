@@ -28,6 +28,34 @@ export default function CommandDashboard() {
   const [evacuationMode, setEvacuationMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // ── Scroll to active section ────────────────────────────────────────────────
+  useEffect(() => {
+    if (activeSection === 'overview') {
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const mapIdToPanel = {
+      map: 'map-panel',
+      gates: 'gate-status-panel',
+      incidents: 'incident-reporter-panel',
+      ai: 'ai-insight-panel',
+      vip: 'vip-tracker-panel',
+      alerts: 'alert-broadcast-panel',
+      weather: 'weather-panel',
+      settings: 'app-header' // no settings panel yet, scroll to top
+    };
+
+    const targetId = mapIdToPanel[activeSection];
+    if (targetId) {
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [activeSection]);
+
   // ── Data State ─────────────────────────────────────────────────────────────
   const [crowdData, setCrowdData] = useState(null);   // { gates, metrics }
   const [weather, setWeather] = useState(null);

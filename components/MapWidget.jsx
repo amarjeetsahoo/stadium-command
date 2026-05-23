@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { Loader } from '@googlemaps/js-api-loader';
 
 const STADIUM_CENTER = { lat: 23.0925, lng: 72.5946 };
 
@@ -18,6 +18,7 @@ const INITIAL_MARKERS = [
 ];
 
 // Dark map style matching the dashboard theme
+// NOTE: styles cannot be used when mapId is present — we deliberately omit mapId here.
 const MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#0d1420' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#64748b' }] },
@@ -37,9 +38,26 @@ const MAP_STYLE = [
 ];
 
 // ---------------------------------------------------------------------------
+// Module-level Loader singleton — prevents double-init in React StrictMode
+// which fires useEffect twice in development and causes "setOptions called once" errors.
+// ---------------------------------------------------------------------------
+let _loaderInstance = null;
+
+function getLoader(apiKey) {
+  if (!_loaderInstance) {
+    _loaderInstance = new Loader({
+      apiKey,
+      version: '3.58',
+      libraries: ['maps', 'marker'],
+    });
+  }
+  return _loaderInstance;
+}
+
+// ---------------------------------------------------------------------------
 // Custom Canvas Heatmap Overlay
-// Replaces google.maps.visualization.HeatmapLayer, which was removed in v3.65.
-// Draws Gaussian blobs on a canvas overlay, blended over the map.
+// Replaces google.maps.visualization.HeatmapLayer, removed in Maps JS API v3.65.
+// Draws Gaussian blobs on a <canvas> overlay, blended over the map.
 // ---------------------------------------------------------------------------
 function createHeatmapOverlay(map) {
   if (!window.google) return null;
@@ -56,8 +74,7 @@ function createHeatmapOverlay(map) {
     }
 
     onAdd() {
-      const panes = this.getPanes();
-      panes.overlayLayer.appendChild(this._canvas);
+      this.getPanes().overlayLayer.appendChild(this._canvas);
     }
 
     onRemove() {
@@ -73,48 +90,36 @@ function createHeatmapOverlay(map) {
 
     draw() {
       const projection = this.getProjection();
+      const ctx = this._canvas.getContext('2d');
+
       if (!projection || !this._points.length) {
-        // Clear canvas if no points
-        const ctx = this._canvas.getContext('2d');
         ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
         return;
       }
 
-      // Size the canvas to the map div
       const mapDiv = this.getMap().getDiv();
       this._canvas.width = mapDiv.offsetWidth;
       this._canvas.height = mapDiv.offsetHeight;
       this._canvas.style.width = mapDiv.offsetWidth + 'px';
       this._canvas.style.height = mapDiv.offsetHeight + 'px';
-
-      // Offset the canvas to align with the map pane origin
-      const overlayProjection = projection;
-      // Reset position to top-left of map
-      const sw = overlayProjection.fromLatLngToDivPixel(
-        new window.google.maps.LatLng(90, -180)
-      );
-      // Canvas is placed at overlay pane top/left = 0,0
       this._canvas.style.top = '0px';
       this._canvas.style.left = '0px';
 
-      const ctx = this._canvas.getContext('2d');
       ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
 
       const RADIUS = 45;
-
       this._points.forEach((latlng) => {
-        const point = overlayProjection.fromLatLngToDivPixel(latlng);
+        const point = projection.fromLatLngToDivPixel(latlng);
         if (!point) return;
 
-        // Draw radial gradient blob
         const gradient = ctx.createRadialGradient(
           point.x, point.y, 0,
           point.x, point.y, RADIUS
         );
-        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.75)');   // red core
-        gradient.addColorStop(0.4, 'rgba(245, 158, 11, 0.55)'); // amber mid
-        gradient.addColorStop(0.7, 'rgba(16, 185, 129, 0.3)');  // green edge
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');           // transparent edge
+        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.75)');
+        gradient.addColorStop(0.4, 'rgba(245, 158, 11, 0.55)');
+        gradient.addColorStop(0.7, 'rgba(16, 185, 129, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.beginPath();
         ctx.arc(point.x, point.y, RADIUS, 0, Math.PI * 2);
@@ -130,39 +135,8 @@ function createHeatmapOverlay(map) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: build a DOM element for AdvancedMarkerElement
+// Main Component
 // ---------------------------------------------------------------------------
-function createMarkerElement(label, color) {
-  const el = document.createElement('div');
-  el.style.cssText = `
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: ${color};
-    border: 2.5px solid rgba(255,255,255,0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: 700;
-    font-size: 10px;
-    font-family: Inter, sans-serif;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  `;
-  el.textContent = label;
-  el.onmouseenter = () => {
-    el.style.transform = 'scale(1.2)';
-    el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.8)';
-  };
-  el.onmouseleave = () => {
-    el.style.transform = 'scale(1)';
-    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.6)';
-  };
-  return el;
-}
-
 export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
   const mapRef = useRef(null);
   const googleMapRef = useRef(null);
@@ -175,26 +149,28 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
       setMapError(
-        'Google Maps API key not configured. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your environment.'
+        'Google Maps API key not configured. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local'
       );
       return;
     }
+
+    // Guard: if map is already initialized (StrictMode double-run), skip
+    if (googleMapRef.current) return;
 
     let cancelled = false;
 
     async function initMap() {
       try {
-        // Pin to stable version 3.58 — avoids unexpected removals like HeatmapLayer in 3.65+
-        setOptions({ apiKey, version: '3.58' });
-
-        const mapsLib = await importLibrary('maps');
-        const markerLib = await importLibrary('marker');
+        const loader = getLoader(apiKey);
+        const google = await loader.load();
 
         if (cancelled || !mapRef.current) return;
 
-        const map = new mapsLib.Map(mapRef.current, {
+        const map = new google.maps.Map(mapRef.current, {
           center: STADIUM_CENTER,
           zoom: 15,
+          // styles is only valid WITHOUT a mapId
+          // We intentionally omit mapId here to keep our dark theme styles
           styles: MAP_STYLE,
           disableDefaultUI: false,
           zoomControl: true,
@@ -204,29 +180,39 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
           rotateControl: false,
           fullscreenControl: true,
           backgroundColor: '#0d1420',
-          // mapId is required for AdvancedMarkerElement
-          mapId: 'crowd_command_map',
         });
 
         googleMapRef.current = map;
 
-        // --- AdvancedMarkerElement gate markers (replaces deprecated Marker) ---
-        const { AdvancedMarkerElement } = markerLib;
+        // --- Legacy Marker (deprecated but fully functional on v3.58) ---
+        // AdvancedMarkerElement requires a mapId which conflicts with styles.
+        // We use Marker here to preserve our custom dark theme map styling.
+        const colorMap = { green: '#10b981', amber: '#f59e0b', red: '#ef4444' };
 
         INITIAL_MARKERS.forEach((markerData) => {
-          const el = createMarkerElement(markerData.label, '#3b82f6');
-          const marker = new AdvancedMarkerElement({
+          const m = new google.maps.Marker({
             position: { lat: markerData.lat, lng: markerData.lng },
             map,
             title: markerData.title,
-            content: el,
+            label: {
+              text: markerData.label,
+              color: '#fff',
+              fontWeight: '700',
+              fontSize: '11px',
+            },
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 14,
+              fillColor: '#3b82f6',
+              fillOpacity: 0.9,
+              strokeColor: '#fff',
+              strokeWeight: 2,
+            },
           });
-          // Attach the DOM element reference so we can update color later
-          marker._el = el;
-          markersRef.current.push(marker);
+          markersRef.current.push(m);
         });
 
-        // --- Custom Canvas Heatmap Overlay (replaces removed HeatmapLayer) ---
+        // --- Custom Canvas Heatmap Overlay ---
         heatmapOverlayRef.current = createHeatmapOverlay(map);
 
         setMapLoaded(true);
@@ -242,8 +228,8 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
 
     return () => {
       cancelled = true;
-      // Cleanup markers on unmount
-      markersRef.current.forEach((m) => (m.map = null));
+      // Cleanup on unmount
+      markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
       if (heatmapOverlayRef.current) {
         heatmapOverlayRef.current.setMap(null);
@@ -256,30 +242,30 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
   useEffect(() => {
     if (!heatmapOverlayRef.current || !heatmapPoints?.length) return;
     if (!window.google) return;
-
     const data = heatmapPoints.map((p) => new window.google.maps.LatLng(p.lat, p.lng));
     heatmapOverlayRef.current.setData(data);
   }, [heatmapPoints]);
 
   // Update gate marker colors based on status + evacuation mode
   useEffect(() => {
-    if (!googleMapRef.current || !gateData?.length) return;
+    if (!googleMapRef.current || !gateData?.length || !window.google) return;
 
-    const colorMap = {
-      green: '#10b981',
-      amber: '#f59e0b',
-      red: '#ef4444',
-    };
+    const google = window.google;
+    const colorMap = { green: '#10b981', amber: '#f59e0b', red: '#ef4444' };
 
     markersRef.current.forEach((marker, i) => {
       const gate = gateData[i];
-      if (!gate || !marker._el) return;
+      if (!gate) return;
 
       const color = evacuationMode ? '#ef4444' : colorMap[gate.status] || '#3b82f6';
-      marker._el.style.background = color;
-      marker._el.style.width = gate.locked ? '38px' : '32px';
-      marker._el.style.height = gate.locked ? '38px' : '32px';
-      marker._el.style.borderWidth = gate.locked ? '3px' : '2.5px';
+      marker.setIcon({
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: gate.locked ? 18 : 14,
+        fillColor: color,
+        fillOpacity: 0.9,
+        strokeColor: '#fff',
+        strokeWeight: gate.locked ? 3 : 2,
+      });
     });
   }, [gateData, evacuationMode]);
 

@@ -32,6 +32,24 @@ graph TD
 
 ---
 
+## 🏟️ Generalizing for Any Stadium
+
+While the platform is pre-configured out-of-the-box with coordinates, gate layouts, and telemetry details for the **Narendra Modi Stadium (Ahmedabad, India)**, its architecture is **fully generalizable** to support any stadium or large-scale event venue worldwide. 
+
+To adapt this platform for a new stadium, only three lightweight modification points are required:
+
+1. **Map Rendering Coordinates ([`components/MapWidget.jsx`](file:///d:/Codebase/APL_BLR_1/stadium-command/components/MapWidget.jsx))**:
+   Update `STADIUM_CENTER` to the latitude/longitude of your chosen stadium:
+   ```javascript
+   const STADIUM_CENTER = { lat: YOUR_LAT, lng: YOUR_LNG };
+   ```
+2. **Gate Telemetry Layout ([`lib/mockData.js`](file:///d:/Codebase/APL_BLR_1/stadium-command/lib/mockData.js))**:
+   Update the `STADIUM_CENTER` coordinates and define the GPS positions for each gate inside the `GATES` array to locate markers accurately.
+3. **Sidebar Details & Capacity ([`components/Sidebar.jsx`](file:///d:/Codebase/APL_BLR_1/stadium-command/components/Sidebar.jsx))**:
+   Modify the hardcoded venue card values (Venue name, city/state, and capacity) at the bottom of the sidebar.
+
+---
+
 ## 🛠️ Technology Stack
 
 *   **Framework**: Next.js 14 (App Router, Standalone Build Output)

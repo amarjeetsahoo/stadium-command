@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function Header({ user, onSignOut, evacuationMode }) {
+export default function Header({ user, onSignOut, evacuationMode, isSidebarCollapsed, onToggleSidebar }) {
   const [time, setTime] = useState('');
 
   useEffect(() => {
@@ -25,6 +25,24 @@ export default function Header({ user, onSignOut, evacuationMode }) {
   return (
     <header className="header" id="app-header">
       <div className="header-brand">
+        <button
+          id="btn-toggle-sidebar"
+          onClick={onToggleSidebar}
+          className="btn btn-ghost btn-sm"
+          style={{
+            marginRight: '8px',
+            fontSize: '12px',
+            padding: '6px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+          title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label="Toggle Sidebar"
+        >
+          {isSidebarCollapsed ? '▶️' : '◀️'}
+        </button>
         <div className="header-logo" aria-hidden="true">
           🏟️
         </div>

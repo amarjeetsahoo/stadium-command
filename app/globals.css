@@ -107,6 +107,11 @@ body {
     'sidebar main';
   height: 100vh;
   overflow: hidden;
+  transition: grid-template-columns var(--transition-base);
+}
+
+.app-shell.sidebar-collapsed {
+  --sidebar-width: 72px;
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────── */
@@ -227,6 +232,7 @@ body {
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--border-default) transparent;
+  transition: all var(--transition-base);
 }
 
 .sidebar::-webkit-scrollbar {
@@ -265,6 +271,7 @@ body {
   font-size: 13px;
   font-weight: 500;
   border: 1px solid transparent;
+  background: transparent;
   text-decoration: none;
   user-select: none;
 }

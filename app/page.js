@@ -26,6 +26,7 @@ export default function CommandDashboard() {
   // ── UI State ───────────────────────────────────────────────────────────────
   const [activeSection, setActiveSection] = useState('overview');
   const [evacuationMode, setEvacuationMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // ── Data State ─────────────────────────────────────────────────────────────
   const [crowdData, setCrowdData] = useState(null);   // { gates, metrics }
@@ -191,9 +192,19 @@ export default function CommandDashboard() {
   }
 
   return (
-    <div className="app-shell">
-      <Header user={user} onSignOut={handleSignOut} evacuationMode={evacuationMode} />
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+    <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <Header
+        user={user}
+        onSignOut={handleSignOut}
+        evacuationMode={evacuationMode}
+        isSidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      <Sidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        isCollapsed={sidebarCollapsed}
+      />
 
       <main className="main-content" id="main-content" aria-label="Dashboard content">
 

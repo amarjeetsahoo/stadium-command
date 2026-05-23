@@ -41,7 +41,7 @@ jobs:
 
       # --- SETUP DOCKER AND PUSH TO ARTIFACT REGISTRY ---
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Configure Docker for Artifact Registry
         run: |

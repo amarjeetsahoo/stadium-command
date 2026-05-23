@@ -1,8 +1,22 @@
 # CrowdCommand 🏟️
 
-### Stadium Crowd Management & Emergency Command Platform
+### Stadium Crowd Management & Emergency Command Center
 
-CrowdCommand is a professional, full-stack stadium security and real-time operations dashboard built using Next.js 14, Google Maps, Firebase, and Google Gemini AI. It provides stadium organizers and emergency personnel with a complete command center to monitor gate flow, track VIP movement, coordinate alerts, and generate automated AI threat analyses.
+CrowdCommand is a professional, full-stack stadium security and real-time operations dashboard built using Next.js 14, Google Maps, Firebase, and Google Gemini AI. It provides stadium organizers, safety officers, and emergency responders with a complete command center to monitor gate flow, track VIP movement, coordinate alerts, and generate automated AI threat analyses.
+
+---
+
+## 🏗️ Architecture Flow
+
+```mermaid
+graph TD
+    Client["Next.js Client Frontend (React)"] -->|Interactive Map| Maps["Google Maps JS SDK"]
+    Client -->|Direct Sync / Auth| FB["Firebase Client (Auth & DB)"]
+    Client -->|Authenticated Requests| API["Next.js API Routes (Server)"]
+    API -->|Token Verification| FBR["Firebase Auth Verification"]
+    API -->|Weather Proxy| OW["OpenWeather API"]
+    API -->|AI Threat Analysis| Gem["Google Gemini AI (1.5 Flash)"]
+```
 
 ---
 
@@ -29,10 +43,57 @@ CrowdCommand is a professional, full-stack stadium security and real-time operat
 
 ---
 
-## 🧪 E2E Automated Security & Integration Testing
+## 💻 Local Development Setup
 
-The application includes an automated, emoji-free PowerShell test suite that validates the security barrier of all API endpoints and verifies response telemetry:
+Follow these steps to set up and run the CrowdCommand platform locally on your machine.
 
+### 📋 Prerequisites
+*   **Node.js**: Version 20.x or higher
+*   **npm**: Version 10.x or higher
+*   **PowerShell** (optional, for running the integration test suite on Windows)
+
+### 📥 Step 1: Install Dependencies
+Clone the repository and install the project dependencies:
+```bash
+npm install
+```
+
+### 🔑 Step 2: Configure Environment Variables
+Create a local environment file by copying the template:
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and populate the required API keys and configuration values:
+
+| Variable | Source / Description |
+| :--- | :--- |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Cloud Console (Maps JavaScript & Heatmap APIs enabled) |
+| `OPENWEATHER_API_KEY` | OpenWeatherMap API credentials |
+| `GEMINI_API_KEY` | Google AI Studio Developer Key |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase Project Web App config |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Project Web App config |
+| `NEXT_PUBLIC_FIREBASE_DATABASE_URL` | Firebase Realtime Database URL |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase Project ID |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase Project Web App config |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`| Firebase Project Web App config |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Project Web App config |
+| `FIREBASE_SERVICE_ACCOUNT_KEY` | Firebase Admin Service Account JSON key (for secure token verification) |
+
+### 🚀 Step 3: Run the Development Server
+Start the Next.js development server:
+```bash
+npm run dev
+```
+Open your browser and navigate to [http://localhost:3000](http://localhost:3000) to see the interactive command center live.
+
+---
+
+## 🧪 E2E Automated Integration & Security Testing
+
+The application includes a rigorous, emoji-free PowerShell test suite that validates the security barriers of all server-side API endpoints, checking that credentials are safe and telemetry is correctly formatted.
+
+Run the test suite with:
 ```powershell
 powershell -ExecutionPolicy Bypass -File test-all.ps1
 ```
@@ -43,13 +104,32 @@ powershell -ExecutionPolicy Bypass -File test-all.ps1
 3.  **POST `/api/ai-analysis`**: Blocks unauthorized requests (`401`), returns Gemini threat analysis payload when authorized (`200`).
 4.  **POST `/api/alerts`**: Blocks unauthorized requests (`401`), logs and broadcasts active alert payloads when authorized (`201`).
 
+To validate all local and secret keys, run the verification script:
+```powershell
+powershell -ExecutionPolicy Bypass -File validate.ps1
+```
+
 ---
 
 ## ⚙️ CI/CD Deployment Architecture
 
 The repository contains a fully automated DevOps pipeline configured at `.github/workflows/deploy.yml`:
 
-*   **Verification**: Automatically runs ESLint checks to guarantee code sanity.
-*   **Docker Containerization**: Uses a highly optimized multi-stage `Dockerfile` capturing lightweight assets. Client-side variables (`NEXT_PUBLIC_*`) are securely passed as build arguments.
-*   **Artifacts**: Automatically pushes the container to Google Artifact Registry.
-*   **Cloud Run**: Deploys to Google Cloud Run, mounting sensitive server-only credentials (`GEMINI_API_KEY`, `OPENWEATHER_API_KEY`) safely from Google Secret Manager.
+### 🔗 CI/CD Pipeline Flow
+1.  **Verification**: Automatically runs ESLint checks to guarantee code sanity.
+2.  **Docker Containerization**: Uses a highly optimized multi-stage `Dockerfile` capturing lightweight assets. Client-side variables (`NEXT_PUBLIC_*`) are securely passed as build arguments.
+3.  **Artifact Registry**: Automatically builds and pushes the container to Google Artifact Registry.
+4.  **Cloud Run Deployment**: Deploys to Google Cloud Run, mounting sensitive server-only credentials (`GEMINI_API_KEY`, `OPENWEATHER_API_KEY`) safely from Google Secret Manager.
+
+### 🛡️ IAM Permissions Configuration
+To ensure seamless deployment and runtime execution, verify the following IAM roles are granted:
+
+*   **Deployer Identity** (used by GitHub Actions):
+    *   Needs the `Cloud Run Admin` role, `Artifact Registry Writer` role, and `Service Account User` role on the deployer service account (e.g., `github-deployer@apl-ggn-1.iam.gserviceaccount.com`).
+*   **Runtime Identity** (used by Cloud Run to access Secret Manager):
+    *   The **Default Compute Engine Service Account** (e.g., `1026717545869-compute@developer.gserviceaccount.com`) must have the **Secret Manager Secret Accessor** (`roles/secretmanager.secretAccessor`) role granted at the project level or for the specific secrets.
+    ```bash
+    gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+        --member="serviceAccount:YOUR_PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+        --role="roles/secretmanager.secretAccessor"
+    ```

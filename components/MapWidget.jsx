@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 const STADIUM_CENTER = { lat: 23.0925, lng: 72.5946 };
 
@@ -38,20 +38,20 @@ const MAP_STYLE = [
 ];
 
 // ---------------------------------------------------------------------------
-// Module-level Loader singleton — prevents double-init in React StrictMode
-// which fires useEffect twice in development and causes "setOptions called once" errors.
+// Module-level promise singleton — prevents double-init in React StrictMode.
+// setOptions() can only be called once per page; subsequent calls are silently
+// ignored by the loader (just a dev warning, not a real error).
+// We cache the importLibrary promise so both StrictMode fires share one load.
 // ---------------------------------------------------------------------------
-let _loaderInstance = null;
+let _googlePromise = null;
 
-function getLoader(apiKey) {
-  if (!_loaderInstance) {
-    _loaderInstance = new Loader({
-      apiKey,
-      version: '3.58',
-      libraries: ['maps', 'marker'],
-    });
+function loadGoogleMaps(apiKey) {
+  if (!_googlePromise) {
+    // setOptions is idempotent on first call; safe to call here
+    setOptions({ key: apiKey, version: '3.58' });
+    _googlePromise = importLibrary('maps');
   }
-  return _loaderInstance;
+  return _googlePromise;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,16 +161,15 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
 
     async function initMap() {
       try {
-        const loader = getLoader(apiKey);
-        const google = await loader.load();
+        // loadGoogleMaps is singleton — safe to call multiple times
+        const mapsLib = await loadGoogleMaps(apiKey);
 
         if (cancelled || !mapRef.current) return;
 
-        const map = new google.maps.Map(mapRef.current, {
+        const map = new mapsLib.Map(mapRef.current, {
           center: STADIUM_CENTER,
           zoom: 15,
-          // styles is only valid WITHOUT a mapId
-          // We intentionally omit mapId here to keep our dark theme styles
+          // styles is only valid WITHOUT a mapId — we keep dark theme by omitting mapId
           styles: MAP_STYLE,
           disableDefaultUI: false,
           zoomControl: true,
@@ -184,13 +183,11 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
 
         googleMapRef.current = map;
 
-        // --- Legacy Marker (deprecated but fully functional on v3.58) ---
-        // AdvancedMarkerElement requires a mapId which conflicts with styles.
-        // We use Marker here to preserve our custom dark theme map styling.
-        const colorMap = { green: '#10b981', amber: '#f59e0b', red: '#ef4444' };
-
+        // --- Legacy Marker (deprecated warning only, fully functional on v3.58) ---
+        // AdvancedMarkerElement requires mapId which conflicts with custom styles.
+        // We use Marker to preserve the dark theme styling.
         INITIAL_MARKERS.forEach((markerData) => {
-          const m = new google.maps.Marker({
+          const m = new window.google.maps.Marker({
             position: { lat: markerData.lat, lng: markerData.lng },
             map,
             title: markerData.title,
@@ -201,7 +198,7 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
               fontSize: '11px',
             },
             icon: {
-              path: google.maps.SymbolPath.CIRCLE,
+              path: window.google.maps.SymbolPath.CIRCLE,
               scale: 14,
               fillColor: '#3b82f6',
               fillOpacity: 0.9,

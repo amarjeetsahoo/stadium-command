@@ -32,7 +32,7 @@ export default function VIPTracker({ onGateUpdate }) {
     });
 
     const unsubGate = onValue(ref(db, 'gate_overrides'), (snap) => {
-      let overrides = {};
+      const overrides = {};
       if (snap.exists()) {
         const data = snap.val();
         for (const gateId in data) {

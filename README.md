@@ -4,6 +4,8 @@
 
 CrowdCommand is a professional, full-stack stadium security and real-time operations dashboard built using Next.js 14, Google Maps, Firebase, and Google Gemini AI. It provides stadium organizers, safety officers, and emergency responders with a complete command center to monitor gate flow, track VIP movement, coordinate alerts, and generate automated AI threat analyses.
 
+📺 **[Watch the full Video Walkthrough on YouTube](https://youtu.be/sjfHXVlguOc)**
+
 ---
 
 ## 🏗️ Architecture Flow

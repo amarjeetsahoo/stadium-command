@@ -71,13 +71,24 @@ function createHeatmapOverlay(map) {
       this._canvas.style.top = '0';
       this._canvas.style.left = '0';
       this._canvas.style.pointerEvents = 'none';
+      this._resizeObserver = null;
     }
 
     onAdd() {
       this.getPanes().overlayLayer.appendChild(this._canvas);
+      
+      const mapDiv = this.getMap().getDiv();
+      this._resizeObserver = new ResizeObserver(() => {
+        this.draw();
+      });
+      this._resizeObserver.observe(mapDiv);
     }
 
     onRemove() {
+      if (this._resizeObserver) {
+        this._resizeObserver.disconnect();
+        this._resizeObserver = null;
+      }
       if (this._canvas.parentNode) {
         this._canvas.parentNode.removeChild(this._canvas);
       }
@@ -94,27 +105,50 @@ function createHeatmapOverlay(map) {
 
       if (!projection || !this._points.length) {
         ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+        this._canvas.style.display = 'none';
         return;
       }
 
-      const mapDiv = this.getMap().getDiv();
-      this._canvas.width = mapDiv.offsetWidth;
-      this._canvas.height = mapDiv.offsetHeight;
-      this._canvas.style.width = mapDiv.offsetWidth + 'px';
-      this._canvas.style.height = mapDiv.offsetHeight + 'px';
-      this._canvas.style.top = '0px';
-      this._canvas.style.left = '0px';
-
-      ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-
+      this._canvas.style.display = 'block';
       const RADIUS = 45;
-      this._points.forEach((latlng) => {
-        const point = projection.fromLatLngToDivPixel(latlng);
-        if (!point) return;
+      const padding = RADIUS + 10;
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      
+      const pixels = this._points.map((latlng) => {
+        const pt = projection.fromLatLngToDivPixel(latlng);
+        if (pt) {
+          if (pt.x < minX) minX = pt.x;
+          if (pt.y < minY) minY = pt.y;
+          if (pt.x > maxX) maxX = pt.x;
+          if (pt.y > maxY) maxY = pt.y;
+        }
+        return pt;
+      }).filter(Boolean);
+
+      if (pixels.length === 0) return;
+
+      const left = minX - padding;
+      const top = minY - padding;
+      const width = (maxX - minX) + padding * 2;
+      const height = (maxY - minY) + padding * 2;
+
+      this._canvas.width = width;
+      this._canvas.height = height;
+      this._canvas.style.width = width + 'px';
+      this._canvas.style.height = height + 'px';
+      this._canvas.style.left = left + 'px';
+      this._canvas.style.top = top + 'px';
+
+      ctx.clearRect(0, 0, width, height);
+
+      pixels.forEach((pt) => {
+        const cx = pt.x - left;
+        const cy = pt.y - top;
 
         const gradient = ctx.createRadialGradient(
-          point.x, point.y, 0,
-          point.x, point.y, RADIUS
+          cx, cy, 0,
+          cx, cy, RADIUS
         );
         gradient.addColorStop(0, 'rgba(239, 68, 68, 0.75)');
         gradient.addColorStop(0.4, 'rgba(245, 158, 11, 0.55)');
@@ -122,7 +156,7 @@ function createHeatmapOverlay(map) {
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.beginPath();
-        ctx.arc(point.x, point.y, RADIUS, 0, Math.PI * 2);
+        ctx.arc(cx, cy, RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
       });

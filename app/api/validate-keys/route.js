@@ -45,8 +45,8 @@ async function testOpenWeather(key) {
 }
 
 async function testGemini(key) {
-  // Try gemini-2.0-flash first (latest), fallback to gemini-pro
-  const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
+  // Try gemini-2.5-flash first, then gemini-2.0-flash, and fallbacks
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro'];
   for (const modelName of models) {
     try {
       const res = await fetch(

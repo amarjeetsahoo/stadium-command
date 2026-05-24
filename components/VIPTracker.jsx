@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { ref, set } from 'firebase/database';
+import { ref, set, onValue } from 'firebase/database';
 
 const VIP_ZONES = [
   { id: 'vip-01', name: 'BCCI President Box', location: 'North Stand, Level 4', emoji: '🏏' },
@@ -16,6 +16,39 @@ export default function VIPTracker({ onGateUpdate }) {
     Object.fromEntries(VIP_ZONES.map((z) => [z.id, { active: false, escortEn: false }]))
   );
   const [gateOverrides, setGateOverrides] = useState({});
+
+  useEffect(() => {
+    const unsubVip = onValue(ref(db, 'vip_zones'), (snap) => {
+      if (snap.exists()) {
+        setVipStates((prev) => {
+          const newData = snap.val();
+          const merged = { ...prev };
+          for (const key in newData) {
+            merged[key] = { ...merged[key], ...newData[key] };
+          }
+          return merged;
+        });
+      }
+    });
+
+    const unsubGate = onValue(ref(db, 'gate_overrides'), (snap) => {
+      let overrides = {};
+      if (snap.exists()) {
+        const data = snap.val();
+        for (const gateId in data) {
+          if (data[gateId]?.locked) overrides[gateId] = 'locked';
+          else if (data[gateId]?.redirect) overrides[gateId] = 'redirect';
+        }
+      }
+      setGateOverrides(overrides);
+      if (onGateUpdate) onGateUpdate(overrides);
+    });
+
+    return () => {
+      unsubVip();
+      unsubGate();
+    };
+  }, [onGateUpdate]);
 
   const toggleVIP = async (zoneId) => {
     const newActive = !vipStates[zoneId]?.active;

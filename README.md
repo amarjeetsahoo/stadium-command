@@ -15,7 +15,7 @@ graph TD
     Client -->|Authenticated Requests| API["Next.js API Routes (Server)"]
     API -->|Token Verification| FBR["Firebase Auth Verification"]
     API -->|Weather Proxy| OW["OpenWeather API"]
-    API -->|AI Threat Analysis| Gem["Google Gemini AI (1.5 Flash)"]
+    API -->|AI Threat Analysis| Gem["Google Gemini AI (2.5 Flash)"]
 ```
 
 ---
@@ -55,7 +55,7 @@ To adapt this platform for a new stadium, only three lightweight modification po
 *   **Framework**: Next.js 14 (App Router, Standalone Build Output)
 *   **Styling**: Modern dark-themed CSS system (Harmonious HSL palettes, glassmorphism, responsive grid layouts)
 *   **Real-time DB & Auth**: Firebase Authentication & Realtime Database
-*   **AI Insights**: Google Gemini AI (`gemini-1.5-flash` with graceful mocked API fallbacks)
+*   **AI Insights**: Google Gemini AI (`gemini-2.5-flash` with graceful mocked API fallbacks)
 *   **Maps & Geospatial**: Google Maps JS API (V2 Loader, Heatmap Visualization Layer)
 *   **CI/CD & DevOps**: GitHub Actions, Google Cloud Run, Google Artifact Registry, GCP Secret Manager
 

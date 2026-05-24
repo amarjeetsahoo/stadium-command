@@ -1,6 +1,6 @@
 'use client';
 
-export default function AIInsightPanel({ insight, isAnalyzing }) {
+export default function AIInsightPanel({ insight, isAnalyzing, onApproveAction }) {
   if (isAnalyzing) {
     return (
       <div className="panel" id="ai-insight-panel">
@@ -60,12 +60,33 @@ export default function AIInsightPanel({ insight, isAnalyzing }) {
           </div>
           <div className="ai-actions-label">Recommended Actions</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {insight.suggestedActions.map((action, idx) => (
+            {insight.suggestedActions?.map((action, idx) => (
               <div key={idx} className="ai-action-item">
                 {action}
               </div>
             ))}
           </div>
+          {insight.systemActions && insight.systemActions.length > 0 && (
+            <>
+              <div className="ai-actions-label" style={{ marginTop: '16px' }}>System Overrides (Awaiting Approval)</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {insight.systemActions.map((sysAction, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '6px', borderLeft: '3px solid #facc15' }}>
+                    <div style={{ fontSize: '12px', color: '#fff', fontFamily: 'var(--font-mono)' }}>
+                      <strong>{sysAction.type}:</strong> {sysAction.targetId} → {sysAction.command}
+                    </div>
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ padding: '6px 12px', fontSize: '11px' }}
+                      onClick={() => onApproveAction && onApproveAction(sysAction)}
+                    >
+                      Approve
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

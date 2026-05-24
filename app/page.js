@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { ref, onValue, set } from 'firebase/database';
+import { auth, db } from '@/lib/firebase';
 import { toHeatmapPoints } from '@/lib/mockData';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -27,6 +28,7 @@ export default function CommandDashboard() {
   const [activeSection, setActiveSection] = useState('overview');
   const [evacuationMode, setEvacuationMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [incidentCount, setIncidentCount] = useState(0);
 
   // ── Scroll to active section ────────────────────────────────────────────────
   useEffect(() => {
@@ -133,6 +135,20 @@ export default function CommandDashboard() {
     };
   }, [user, fetchCrowdData, fetchWeather]);
 
+  // ── Incident Realtime Listener ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    const incidentsRef = ref(db, 'incidents');
+    const unsubscribe = onValue(incidentsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setIncidentCount(Object.keys(snapshot.val()).length);
+      } else {
+        setIncidentCount(0);
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
+
   // ── Auth Handlers ──────────────────────────────────────────────────────────
   const handleSignOut = async () => {
     try {
@@ -158,6 +174,30 @@ export default function CommandDashboard() {
   const handleIncidentSubmit = (incident) => {
     setIsAnalyzingAI(false);
     setAiInsight(incident.aiAnalysis);
+  };
+
+  // ── System Actions Execution ────────────────────────────────────────────────
+  const handleApproveAction = async (sysAction) => {
+    try {
+      if (sysAction.type === 'GATE_OVERRIDE') {
+        const gateStr = sysAction.targetId.replace('gate-0', 'G').replace('gate-', 'G').toUpperCase();
+        const updateObj = sysAction.command === 'lock' ? { locked: true, updatedAt: Date.now() } : { redirect: true, updatedAt: Date.now() };
+        await set(ref(db, `gate_overrides/${gateStr}`), updateObj);
+      } else if (sysAction.type === 'VIP_ESCORT') {
+        await set(ref(db, `vip_zones/${sysAction.targetId}`), { active: true, escortEn: true });
+      }
+      
+      setAiInsight((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          systemActions: prev.systemActions.filter(a => a !== sysAction)
+        };
+      });
+      
+    } catch (err) {
+      console.error('[dashboard] Failed to execute AI action:', err);
+    }
   };
 
   // ── VIP / Gate Override Handlers ───────────────────────────────────────────
@@ -237,7 +277,7 @@ export default function CommandDashboard() {
       <main className="main-content" id="main-content" aria-label="Dashboard content">
 
         {/* ── Metrics Bar ── */}
-        <MetricsBar metrics={crowdData?.metrics} />
+        <MetricsBar metrics={{ ...crowdData?.metrics, activeIncidents: incidentCount }} />
 
         {/* ── Last updated ticker ── */}
         {lastUpdated && (
@@ -306,7 +346,7 @@ export default function CommandDashboard() {
             <AlertBroadcast />
 
             {/* ── AI Threat Analysis ── */}
-            <AIInsightPanel insight={aiInsight} isAnalyzing={isAnalyzingAI} />
+            <AIInsightPanel insight={aiInsight} isAnalyzing={isAnalyzingAI} onApproveAction={handleApproveAction} />
 
             {/* ── Incident Reporter ── */}
             <IncidentReporter user={user} onIncidentSubmitted={handleIncidentSubmit} onAnalysisStart={handleIncidentStart} />

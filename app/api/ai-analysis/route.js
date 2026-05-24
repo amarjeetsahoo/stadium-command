@@ -25,13 +25,11 @@ export async function POST(request) {
             'Dispatch security to ' + location,
             'Monitor the situation closely',
           ],
+          systemActions: []
         },
         { status: 200 }
       );
     }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `
       You are an AI assistant for a stadium crowd management team.
@@ -42,33 +40,80 @@ export async function POST(request) {
       - Reported Severity: ${severity}
 
       Provide a brief threat summary and 2-3 concise actionable steps for the ground staff.
+      If the incident mentions VIPs or Gate overcrowding/issues, also provide an array of exact system actions to execute.
+      Valid system action types: "GATE_OVERRIDE", "VIP_ESCORT".
+      Valid target IDs for Gate: "gate-01" to "gate-08". Valid commands: "lock", "redirect".
+      Valid target IDs for VIP: "vip-01" to "vip-04". Valid commands: "enable_escort".
       Respond in JSON format:
       {
         "summary": "Brief 1-2 sentence summary of the threat",
         "riskLevel": "Low | Medium | High | Critical",
-        "suggestedActions": ["Action 1", "Action 2", "Action 3"]
+        "suggestedActions": ["Action 1", "Action 2", "Action 3"],
+        "systemActions": [
+          { "type": "GATE_OVERRIDE", "targetId": "gate-03", "command": "redirect" },
+          { "type": "VIP_ESCORT", "targetId": "vip-01", "command": "enable_escort" }
+        ]
       }
     `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const genAI = new GoogleGenerativeAI(apiKey);
     
-    // Parse the JSON from the markdown block if present
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return NextResponse.json(parsed, { status: 200 });
+    let resultText = '';
+    let success = false;
+    
+    // Attempt preferred model first, fall back to secondary model if unavailable
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-pro'];
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        resultText = result.response.text();
+        success = true;
+        break;
+      } catch (modelErr) {
+        console.warn(`[ai-analysis] Model ${modelName} failed to generate content:`, modelErr.message);
+      }
     }
 
-    return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
-
-  } catch (err) {
-    console.error('[ai-analysis] Error:', err);
+    if (success) {
+      // Parse the JSON from the markdown block if present
+      const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return NextResponse.json(parsed, { status: 200 });
+      }
+      throw new Error('Failed to parse AI response content');
+    }
+    
+    // If all models failed, fall back to a clean mock response indicating manual evaluation is required
+    console.error('[ai-analysis] All generative models failed. Providing professional mock fallback.');
+    const formattedSeverity = severity ? severity.charAt(0).toUpperCase() + severity.slice(1) : 'High';
     return NextResponse.json(
       {
-        summary: 'AI analysis failed: ' + err.message,
-        riskLevel: 'High',
-        suggestedActions: ['Fallback action: Evaluate manually'],
+        summary: `Stadium AI threat analysis service is currently offline. Ground staff should manually evaluate the ${type.toLowerCase()} reported at ${location}.`,
+        riskLevel: formattedSeverity,
+        suggestedActions: [
+          `Dispatch ground security teams directly to ${location} to assess the situation`,
+          `Notify nearby gate staff and establish direct communication channels`,
+          'Fallback action: Evaluate manually'
+        ],
+        systemActions: []
+      },
+      { status: 200 }
+    );
+
+  } catch (err) {
+    console.error('[ai-analysis] Critical handler error:', err);
+    const formattedSeverity = severity ? severity.charAt(0).toUpperCase() + severity.slice(1) : 'High';
+    return NextResponse.json(
+      {
+        summary: `AI analysis failed: ${err.message}`,
+        riskLevel: formattedSeverity,
+        suggestedActions: [
+          'Fallback action: Evaluate manually',
+          `Monitor the reported incident at ${location} manually`
+        ],
+        systemActions: []
       },
       { status: 200 }
     );

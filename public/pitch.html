@@ -1,0 +1,187 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<title>APL Phase 2: Live Pitch & Technical Defense</title>
+		
+		<!-- Reveal.js core CSS -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.css">
+		<!-- Reveal.js theme (black is great for dark-mode apps like yours) -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.css">
+		
+		<style>
+			.reveal h2, .reveal h3 {
+				text-transform: none;
+				color: #4ade80; /* A cool accent green */
+			}
+			.reveal p, .reveal li {
+				font-size: 0.8em;
+				line-height: 1.4;
+			}
+			.highlight-box {
+				background: rgba(255,255,255,0.1);
+				padding: 15px;
+				border-radius: 8px;
+				border-left: 4px solid #4ade80;
+				margin-bottom: 20px;
+				text-align: left;
+			}
+			.highlight-box h4 {
+				margin: 0 0 10px 0;
+				font-size: 0.9em;
+				color: #fff;
+			}
+			.highlight-box p {
+				margin: 0;
+				font-size: 0.8em;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				
+				<!-- Slide 1: Title -->
+				<section>
+                    <h2>🏆 APL Phase 2</h2>
+                    <h3>Live Pitch & Technical Defense</h3>
+                    <p style="color: #888;">CrowdCommand Mission Control</p>
+					<p style="font-size: 0.5em; margin-top: 50px;">Use Spacebar or Arrow Keys to navigate</p>
+                </section>
+				
+				<!-- Slide 2: Workflow -->
+                <section>
+                    <h3>🧠 The Core Agentic Workflow</h3>
+                    <p>A cyber-physical safety loop, not just a dashboard.</p>
+                    <ul style="text-align: left;">
+                        <li><strong>1. Staff Input:</strong> JSON Incident Report ➡️ Secure API</li>
+                        <li><strong>2. Dynamic Prompting:</strong> ➡️ Gemini 2.5 Flash</li>
+                        <li><strong>3. Structured JSON:</strong> ➡️ AI Analyst Panel</li>
+                        <li><strong>4. One-click Action:</strong> ➡️ Gate Interventions</li>
+                        <li><strong>5. Socket Sync:</strong> ➡️ Global Dashboard Updates</li>
+                    </ul>
+                </section>
+				
+				<!-- Slide 3: Innovation Points -->
+                <section>
+                    <h3>💎 Key Innovation Points</h3>
+                    <div class="highlight-box">
+						<h4>Strict JSON Output Constraint</h4>
+						<p>We force Gemini to output a strict schema (`summary`, `riskLevel`, `suggestedActions`) for real-time actionable UI rendering.</p>
+					</div>
+					<div class="highlight-box" style="border-left-color: #facc15;">
+						<h4>Graceful Fallback Mode</h4>
+						<p>If AI quotas fail, the system downgrades to local deterministic hazard mapping instantly to stay online.</p>
+					</div>
+					<div class="highlight-box" style="border-left-color: #3b82f6;">
+						<h4>State Coordination</h4>
+						<p>Real-time Firebase-to-Maps sync for instant physical gate overrides.</p>
+					</div>
+                </section>
+				
+				<!-- Slide 4: Demo Part 1 -->
+                <section>
+                    <section>
+                        <h3>🎬 Live Demo: "Happy Path"</h3>
+                        <p style="color: #aaa;">Part 1: The Incident (Press Down)</p>
+                    </section>
+                    <section>
+                        <div class="highlight-box">
+							<h4>1. The Shell</h4>
+							<p>Log into Mission Control instantly via secure Firebase Auth.</p>
+						</div>
+						<div class="highlight-box">
+							<h4>2. Telemetry</h4>
+							<p>Showcase real-time 10-second polling hook that avoids main-thread locking.</p>
+						</div>
+						<div class="highlight-box">
+							<h4>3. The Incident</h4>
+							<p>Report overcrowding at Gate 3. Context is sent securely to Google Gemini.</p>
+						</div>
+                    </section>
+                </section>
+				
+				<!-- Slide 5: Demo Part 2 -->
+                <section>
+                    <section>
+                        <h3>🎬 Live Demo: "Happy Path"</h3>
+                        <p style="color: #aaa;">Part 2: The Action (Press Down)</p>
+                    </section>
+                    <section>
+                        <div class="highlight-box">
+							<h4>4. The AI Insight</h4>
+							<p>Gemini classifies risk as 'High' with concrete mitigation actions.</p>
+						</div>
+						<div class="highlight-box">
+							<h4>5. Mitigation</h4>
+							<p>Execute overrides: Lock Gate 4, Redirect Gate 3. Global socket sync!</p>
+						</div>
+						<div class="highlight-box">
+							<h4>6. Evacuation</h4>
+							<p>System-wide emergency alert and lockdown.</p>
+						</div>
+                    </section>
+                </section>
+				
+				<!-- Slide 6: Pitch -->
+                <section>
+                    <h3>🗣️ The Elevator Pitch</h3>
+                    <div style="text-align: left;">
+						<p><strong>🚨 The Threat:</strong> Massive crowds at cricket matches create dangerous bottlenecks, severe security vulnerabilities, and logistical chaos during pre- and post-match movements.</p>
+						<p><strong>⚠️ The Gap:</strong> Current operations rely on fragmented, manual systems, leaving security unable to adapt instantly to rapid crowd surges or emerging physical threats.</p>
+						<p><strong>💡 The Need & Solution:</strong> Organizers urgently need an integrated command platform. CrowdCommand provides a unified Mission Control to dynamically route crowd flow and automate emergency responses for a safe, seamless fan experience.</p>
+					</div>
+                </section>
+				
+				<!-- Slide 7: Defense -->
+                <section>
+                    <section>
+                        <h3>🛡️ Tech Defense</h3>
+                        <p style="color: #aaa;">Architecture & DevOps (Press Down)</p>
+                    </section>
+                    <section>
+                        <div class="highlight-box">
+							<h4>Why Next.js Standalone on Cloud Run?</h4>
+							<p>`output: 'standalone'` drops heavy node_modules. Final container is 87MB: ultra-low cold starts, scale-to-zero efficiency.</p>
+						</div>
+						<div class="highlight-box">
+							<h4>How is backend verified securely?</h4>
+							<p>We avoid heavy service accounts using Firebase Identity REST API to validate client ID tokens on-the-fly (Zero-trust).</p>
+						</div>
+                    </section>
+                    <section>
+                        <div class="highlight-box">
+							<h4>How to handle React 18 StrictMode Maps?</h4>
+							<p>Built a Module-level Promise Singleton to prevent double-initialization crashes.</p>
+						</div>
+						<div class="highlight-box">
+							<h4>How are CI/CD secrets managed?</h4>
+							<p>Client variables via build args. Server keys (GEMINI_API_KEY) in GCP Secret Manager, mounted dynamically at runtime.</p>
+						</div>
+                    </section>
+                </section>
+				
+				<!-- Slide 8: End -->
+				<section>
+					<h2>🚀 Good Luck!</h2>
+					<p>You are 100% ready to win the APL.</p>
+				</section>
+				
+			</div>
+		</div>
+
+		<!-- Reveal.js JS -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.js"></script>
+		<script>
+			// Initialize presentation
+			Reveal.initialize({
+				hash: true,
+				slideNumber: 'c/t',
+				transition: 'convex',
+				backgroundTransition: 'fade'
+			});
+		</script>
+	</body>
+</html>

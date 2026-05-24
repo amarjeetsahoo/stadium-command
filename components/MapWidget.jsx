@@ -37,6 +37,27 @@ const MAP_STYLE = [
   { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
 ];
 
+const LIGHT_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
+  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#eeeeee' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#e5e5e5' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#dadada' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
+  { featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
+  { featureType: 'transit.line', elementType: 'geometry', stylers: [{ color: '#e5e5e5' }] },
+  { featureType: 'transit.station', elementType: 'geometry', stylers: [{ color: '#eeeeee' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9c9c9' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] }
+];
+
 // ---------------------------------------------------------------------------
 // Module-level promise singleton — prevents double-init in React StrictMode.
 // setOptions() can only be called once per page; subsequent calls are silently
@@ -171,7 +192,7 @@ function createHeatmapOverlay(map) {
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
-export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
+export default function MapWidget({ gateData, heatmapPoints, evacuationMode, theme }) {
   const mapRef = useRef(null);
   const googleMapRef = useRef(null);
   const heatmapOverlayRef = useRef(null);
@@ -203,8 +224,7 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
         const map = new mapsLib.Map(mapRef.current, {
           center: STADIUM_CENTER,
           zoom: 15,
-          // styles is only valid WITHOUT a mapId — we keep dark theme by omitting mapId
-          styles: MAP_STYLE,
+          styles: theme === 'light' ? LIGHT_MAP_STYLE : MAP_STYLE,
           disableDefaultUI: false,
           zoomControl: true,
           mapTypeControl: false,
@@ -212,7 +232,7 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
           streetViewControl: false,
           rotateControl: false,
           fullscreenControl: true,
-          backgroundColor: '#0d1420',
+          backgroundColor: theme === 'light' ? '#f5f5f5' : '#0d1420',
         });
 
         googleMapRef.current = map;
@@ -268,6 +288,16 @@ export default function MapWidget({ gateData, heatmapPoints, evacuationMode }) {
       }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dynamically update map style when theme changes
+  useEffect(() => {
+    if (googleMapRef.current) {
+      googleMapRef.current.setOptions({
+        styles: theme === 'light' ? LIGHT_MAP_STYLE : MAP_STYLE,
+        backgroundColor: theme === 'light' ? '#f5f5f5' : '#0d1420',
+      });
+    }
+  }, [theme]);
 
   // Update heatmap when crowd data changes
   useEffect(() => {

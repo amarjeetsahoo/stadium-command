@@ -29,6 +29,26 @@ export default function CommandDashboard() {
   const [evacuationMode, setEvacuationMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [incidentCount, setIncidentCount] = useState(0);
+  const [theme, setTheme] = useState('dark');
+
+  // Load theme on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      setTheme('light');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  };
 
   // ── Scroll to active section ────────────────────────────────────────────────
   useEffect(() => {
@@ -267,6 +287,8 @@ export default function CommandDashboard() {
         evacuationMode={evacuationMode}
         isSidebarCollapsed={sidebarCollapsed}
         onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
       <Sidebar
         activeSection={activeSection}
@@ -299,11 +321,12 @@ export default function CommandDashboard() {
         <div className="dashboard-grid">
           <div className="dashboard-left">
 
-            {/* ── Google Maps Heatmap ── */}
+            {/* ── Heatmap Widget ── */}
             <MapWidget
               gateData={displayGates}
               heatmapPoints={heatmapPoints}
               evacuationMode={evacuationMode}
+              theme={theme}
             />
 
             {/* ── Gate Status Panel ── */}

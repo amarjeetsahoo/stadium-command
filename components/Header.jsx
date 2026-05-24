@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export default function Header({ user, onSignOut, evacuationMode, isSidebarCollapsed, onToggleSidebar }) {
+export default function Header({ user, onSignOut, evacuationMode, isSidebarCollapsed, onToggleSidebar, theme, toggleTheme }) {
   const [time, setTime] = useState('');
 
   useEffect(() => {
@@ -78,6 +78,16 @@ export default function Header({ user, onSignOut, evacuationMode, isSidebarColla
       </div>
 
       <div className="header-right">
+        <button
+          onClick={toggleTheme}
+          className="btn btn-ghost btn-sm"
+          style={{ fontSize: '14px', padding: '4px 8px', marginRight: '8px' }}
+          title="Toggle Light/Dark Mode"
+          aria-label="Toggle Theme"
+        >
+          {theme === 'light' ? '🌙' : '☀️'}
+        </button>
+
         <time className="header-time" dateTime={new Date().toISOString()}>
           {time} IST
         </time>
